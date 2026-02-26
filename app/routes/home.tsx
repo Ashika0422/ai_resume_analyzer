@@ -1,5 +1,7 @@
 import type { Route } from "./+types/home";
 import Navbar from "~/Components/Navbar";
+import { resumes } from "../../constants";
+import ResumeCard from "~/Components/ResumeCard";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -12,12 +14,18 @@ export default function Home() {
   return <main className="bg-[url('/images/bg-main.svg')]">
     <Navbar />
     <section className="main-section">
-      <div className="page-heading">
+      <div className="page-heading py-16">
         <h1>Track Your Applications & Resume Ratings</h1>
         <h2>Get instant feedback on your resume and job applications</h2>
       </div>
+       {resumes.length > 0 && (
+     <div className="resume-section grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 w-full max-w-[1400px] place-items-center">
+        {resumes.map((resume) => (
+         <ResumeCard key={resume.id} resume={resume} />
+        ))}
+      </div>
+    )} 
     </section>
-
-
+      
   </main>
 }
