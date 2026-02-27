@@ -117,18 +117,23 @@ export const usePuterStore = create<PuterStore>((set, get) => {
   };
 
   const checkAuthStatus = async (): Promise<boolean> => {
+    console.log('checkAuthStatus called');
     const puter = getPuter();
     if (!puter) {
+      console.log('Puter not available for auth check');
       setError("Puter.js not available");
       return false;
     }
 
+    console.log('Starting auth status check');
     set({ isLoading: true, error: null });
 
     try {
       const isSignedIn = await puter.auth.isSignedIn();
+      console.log('isSignedIn result:', isSignedIn);
       if (isSignedIn) {
         const user = await puter.auth.getUser();
+        console.log('User data:', user);
         set({
           auth: {
             user,
@@ -143,6 +148,7 @@ export const usePuterStore = create<PuterStore>((set, get) => {
         });
         return true;
       } else {
+        console.log('User not signed in');
         set({
           auth: {
             user: null,
@@ -158,6 +164,7 @@ export const usePuterStore = create<PuterStore>((set, get) => {
         return false;
       }
     } catch (err) {
+      console.log('Auth check error:', err);
       const msg =
         err instanceof Error ? err.message : "Failed to check auth status";
       setError(msg);
@@ -166,18 +173,24 @@ export const usePuterStore = create<PuterStore>((set, get) => {
   };
 
   const signIn = async (): Promise<void> => {
+    console.log('signIn called');
     const puter = getPuter();
     if (!puter) {
+      console.log('Puter not available for signIn');
       setError("Puter.js not available");
       return;
     }
 
+    console.log('Starting sign in process');
     set({ isLoading: true, error: null });
 
     try {
+      console.log('Calling puter.auth.signIn()');
       await puter.auth.signIn();
+      console.log('puter.auth.signIn() completed');
       await checkAuthStatus();
     } catch (err) {
+      console.log('signIn error:', err);
       const msg = err instanceof Error ? err.message : "Sign in failed";
       setError(msg);
     }
@@ -242,15 +255,19 @@ export const usePuterStore = create<PuterStore>((set, get) => {
   };
 
   const init = (): void => {
+    console.log('Puter init called');
     const puter = getPuter();
     if (puter) {
+      console.log('Puter found immediately');
       set({ puterReady: true });
       checkAuthStatus();
       return;
     }
 
+    console.log('Puter not found, waiting...');
     const interval = setInterval(() => {
       if (getPuter()) {
+        console.log('Puter found after waiting');
         clearInterval(interval);
         set({ puterReady: true });
         checkAuthStatus();
@@ -260,6 +277,7 @@ export const usePuterStore = create<PuterStore>((set, get) => {
     setTimeout(() => {
       clearInterval(interval);
       if (!getPuter()) {
+        console.log('Puter failed to load');
         setError("Puter.js failed to load within 10 seconds");
       }
     }, 10000);
@@ -412,7 +430,7 @@ export const usePuterStore = create<PuterStore>((set, get) => {
   };
 
   return {
-    isLoading: true,
+    isLoading: false,
     error: null,
     puterReady: false,
     auth: {
