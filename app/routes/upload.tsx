@@ -128,7 +128,7 @@ const Uploads = () => {
             <form id='upload-form' onSubmit={handleSubmit} className="flex flex-col gap-4 mt-8">
               <div className="form-div">
                 <label htmlFor="company-name">Company Name</label>
-                <input type="text" name='company-name' placeholder='Company Name' id='comany-name' />
+                <input type="text" name='company-name' placeholder='Company Name' id='company-name' />
               </div>
               <div className="form-div">
                 <label htmlFor="job-title">Job Title</label>
@@ -140,7 +140,7 @@ const Uploads = () => {
               </div>
 
               <div className="form-div">
-                <label htmlFor="uploader">Upload Resume</label>
+                <label>Upload Resume</label>
                 <FileUploader onFileSelect={handleFileSelect}/>
               </div>
 
