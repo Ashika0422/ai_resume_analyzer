@@ -1,11 +1,33 @@
 import React, { useState, type FormEvent } from 'react'
+import FileUploader from '~/Components/FileUploader';
 import Navbar from '~/Components/Navbar'
 
 const Uploads = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusText, setStatusText] = useState("");
+  const [file, setFile] = useState<File | null>(null);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {}
+  const handleFileSelect = (file: File | null) => {
+    setFile(file);
+  }
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget.closest('form');
+    if (!form) return;
+
+    const formData = new FormData(form);
+    const companyName = formData.get('company-name');
+    const jobTitle = formData.get('job-title');
+    const jobDescription = formData.get('job-description');
+
+    console.log({
+      companyName,
+      jobTitle,
+      jobDescription,
+      file
+    })
+  }
 
   return (
     <main className="bg-[url('/images/bg-main.svg')]">
@@ -39,7 +61,7 @@ const Uploads = () => {
 
               <div className="form-div">
                 <label htmlFor="uploader">Upload Resume</label>
-                <div>Uploader</div>
+                <FileUploader onFileSelect={handleFileSelect}/>
               </div>
 
               <button type='submit' className="primary-button">
