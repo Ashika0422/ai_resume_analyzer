@@ -22,13 +22,34 @@ const Uploads = () => {
     setIsProcessing(true);
     setStatusText("Uploading the file...");
 
+    console.log('File details:', {
+      name: file.name,
+      type: file.type,
+      size: file.size
+    });
+
     const uploadFile = await fs.upload([file]);
 
     if(!uploadFile) return setStatusText('Error: Failed to upload file');
 
     setStatusText("Converting the image...");
-    const imageFile = await convertPdfToImage(file);
-    if(!imageFile.file) return setStatusText('Error: Failed to convert PDF to image');
+    console.log('Starting PDF conversion...');
+    
+    let imageFile;
+    try {
+      imageFile = await convertPdfToImage(file);
+      console.log('Conversion result:', imageFile);
+      
+      if(!imageFile.file) {
+        console.error('PDF conversion failed:', imageFile.error);
+        return setStatusText(`Error: ${imageFile.error || 'Failed to convert PDF to image'}`);
+      }
+      
+      console.log('PDF converted successfully');
+    } catch (error) {
+      console.error('PDF conversion error:', error);
+      return setStatusText(`Error: PDF conversion failed - ${error}`);
+    }
 
     setStatusText("Uploading the converted image...");
     const uploadedImage = await fs.upload([imageFile.file]);
@@ -97,7 +118,7 @@ const Uploads = () => {
           {isProcessing ? (
             <>
              <h2>{statusText}</h2>
-             <img src="/images/resume-scan-gif" alt="Resume scanning animation" className="w-full" />
+             <img src="/images/resume-scan.gif" alt="Resume scanning animation" className="w-full" />
 
             </>
           ) : (
