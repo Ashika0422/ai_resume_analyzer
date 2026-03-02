@@ -9,7 +9,7 @@ import { generateUUID } from '~/lib/utils';
 
 const Uploads = () => {
   const {auth, isLoading, fs, ai, kv} = usePuterStore();
-  const navigae = useNavigate();
+  const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusText, setStatusText] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -60,8 +60,8 @@ const Uploads = () => {
     const uuid = generateUUID();
     const data = {
       id: uuid,
-      resumepath: uploadFile.path,
-      imagepath: uploadedImage.path,
+      resumePath: uploadFile.path,
+      imagePath: uploadedImage.path,
       companyName,
       jobTitle,
       jobDescription,
@@ -84,7 +84,7 @@ const Uploads = () => {
     data.feedback = JSON.parse(feedbackText);
     await kv.set(`resume:${uuid}`, JSON.stringify(data));
     setStatusText("Analysis complete! Redirecting to results page...");
-    console.log(data);
+    navigate(`/resume/${uuid}`);
   }
   
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
