@@ -1,8 +1,11 @@
+import { prepareInstructions } from '../../constants/index';
 import React, { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router';
 import FileUploader from '~/Components/FileUploader';
 import Navbar from '~/Components/Navbar'
+import { convertPdfToImage } from '~/lib/pdf2img';
 import { usePuterStore } from '~/lib/puter';
+import { generateUUID } from '~/lib/utils';
 
 const Uploads = () => {
   const {auth, isLoading, fs, ai, kv} = usePuterStore();
@@ -24,9 +27,45 @@ const Uploads = () => {
     if(!uploadFile) return setStatusText('Error: Failed to upload file');
 
     setStatusText("Converting the image...");
-    // const imageFile = await convertPdfToImage(file);
-  }
+    const imageFile = await convertPdfToImage(file);
+    if(!imageFile.file) return setStatusText('Error: Failed to convert PDF to image');
 
+    setStatusText("Uploading the converted image...");
+    const uploadedImage = await fs.upload([imageFile.file]);
+    if(!uploadedImage) return setStatusText('Error: Failed to upload converted image');
+
+    setStatusText("Preparing data...");
+    
+    const uuid = generateUUID();
+    const data = {
+      id: uuid,
+      resumepath: uploadFile.path,
+      imagepath: uploadedImage.path,
+      companyName,
+      jobTitle,
+      jobDescription,
+      feedback : '',
+    }
+    await kv.set(`resume:${uuid}`, JSON.stringify(data));
+
+    setStatusText("Analyzing the resume...");
+
+    const feedback = await ai.feedback(
+      uploadFile.path,
+      prepareInstructions({jobTitle, jobDescription})
+    )
+    if(!feedback) return setStatusText('Error: Failed to get feedback from AI');
+
+    const  feedbackText = typeof feedback.message.content === 'string'
+      ? feedback.message.content
+      : feedback.message.content[0].text;
+
+    data.feedback = JSON.parse(feedbackText);
+    await kv.set(`resume:${uuid}`, JSON.stringify(data));
+    setStatusText("Analysis complete! Redirecting to results page...");
+    console.log(data);
+  }
+  
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget.closest('form');
