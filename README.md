@@ -90,6 +90,5 @@ docker build -t ai-resume-analyzer .
 docker run -p 3000:3000 ai-resume-analyzer
 ```
 
-## License
 
-Add your preferred license in this repository (for example, MIT).
+
