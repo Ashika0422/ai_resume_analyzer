@@ -1,13 +1,15 @@
 import type { Route } from "./+types/home";
 import Navbar from "~/Components/Navbar";
 import ResumeCard from "~/Components/ResumeCard";
+import Chatbot from "~/Components/Chatbot/Chatbot";
 import { usePuterStore } from "~/lib/puter";
 import { Link, useNavigate } from "react-router";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "ATSify" },
+    
     { name: "description", content: "Smart feedback for your dream job!" },
   ];
 }
@@ -80,6 +82,6 @@ useEffect(() => {
       </div>
     )}
     </section>
-      
+    <Chatbot />
   </main>
 }
