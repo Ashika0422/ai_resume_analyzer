@@ -2,6 +2,8 @@
 
 AI Resume Analyzer is a web app for uploading resumes, analyzing them for ATS compatibility, and getting clear, actionable improvement tips.
 
+Live demo: https://ai-resume-analyzer-chi-weld.vercel.app
+
 ## Features
 
 - Resume upload and processing flow
