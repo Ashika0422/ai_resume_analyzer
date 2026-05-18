@@ -1,87 +1,83 @@
 # AI Resume Analyzer
 
-A modern web app to upload, analyze, and review resumes with ATS-style feedback, category scores, and detailed improvement tips.
+AI Resume Analyzer is a web app for uploading resumes, analyzing them for ATS compatibility, and getting clear, actionable improvement tips.
 
 ## Features
 
 - Resume upload and processing flow
 - ATS score summary with actionable suggestions
-- Detailed category breakdown:
-  - Tone & Style
-  - Content
-  - Structure
-  - Skills
-- Resume history/detail view by ID
-- App data wipe utility route
+- Detailed category breakdown (Tone, Content, Structure, Skills)
+- Resume history and detail view by ID
+- Built-in chatbot assistant for ATS guidance
 
 ## Tech Stack
 
-- React + TypeScript
-- React Router (file-based route config)
+- React 19 + TypeScript
+- React Router 7 (SSR capable)
 - Vite
-- Tailwind CSS utilities (`clsx`, `tailwind-merge`)
+- Tailwind utilities (`clsx`, `tailwind-merge`)
+- Gemini API (via `VITE_API_KEY`)
+
+## Requirements
+
+- Node.js 18+
+- npm
+
+## Setup
+
+1. Install dependencies:
+  ```bash
+  npm install
+  ```
+2. Create a local `.env` file:
+  ```dotenv
+  VITE_API_KEY=your_google_api_key
+  ```
+3. Start the dev server:
+  ```bash
+  npm run dev
+  ```
+
+## Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Serve the production build
+- `npm run typecheck` - Generate types and run TypeScript checks
 
 ## Project Structure
 
-- Routing config: [app/routes.ts](app/routes.ts)
-- Wipe route: [app/routes/wipe.tsx](app/routes/wipe.tsx)
-- ATS component: [app/Components/ATS.tsx](app/Components/ATS.tsx)
-- Details component: [app/Components/Details.tsx](app/Components/Details.tsx)
-- Summary component: [app/Components/Summary.tsx](app/Components/Summary.tsx)
-- Resume card component: [app/Components/ResumeCard.tsx](app/Components/ResumeCard.tsx)
+- Routes: [app/routes.ts](app/routes.ts)
+- Home: [app/routes/home.tsx](app/routes/home.tsx)
+- Upload: [app/routes/upload.tsx](app/routes/upload.tsx)
+- Resume detail: [app/routes/resume.tsx](app/routes/resume.tsx)
+- Chatbot: [app/Components/Chatbot](app/Components/Chatbot)
+- Utilities: [lib](lib)
 
 ## Routes
 
-Defined in [app/routes.ts](app/routes.ts):
+- `/` - Home
+- `/auth` - Authentication
+- `/upload` - Resume upload
+- `/resume/:id` - Resume detail and analysis
+- `/wipe` - Clear app data
 
-- `/` – Home
-- `/auth` – Authentication
-- `/upload` – Resume upload
-- `/resume/:id` – Resume detail/analysis
-- `/wipe` – Clear app data
+## Environment Variables
 
-## Getting Started
+Create a `.env` file locally and set:
 
-### Prerequisites
-
-- Node.js 18+
-- npm (or compatible package manager)
-
-### Installation
-
-```bash
-npm install
+```dotenv
+VITE_API_KEY=your_google_api_key
 ```
 
-### Run in development
+Do not commit `.env` to source control.
 
-```bash
-npm run dev
-```
+## Deployment Notes
 
-### Build for production
+- **Static deploy (Vercel)**: Set `ssr: false` in [react-router.config.ts](react-router.config.ts), build, and deploy `build/client`.
+- **SSR deploy**: Keep `ssr: true` and host a Node server using `npm run start`.
 
-```bash
-npm run build
-```
-
-### Preview production build
-
-```bash
-npm run preview
-```
-
-## Environment & Configuration
-
-Review and update project-level configuration files as needed:
-
-- [package.json](package.json)
-- [tsconfig.json](tsconfig.json)
-- [vite.config.ts](vite.config.ts)
-- [react-router.config.ts](react-router.config.ts)
-- [Dockerfile](Dockerfile)
-
-## Docker
+## Docker (Optional)
 
 Build and run with Docker:
 
