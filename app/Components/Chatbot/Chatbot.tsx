@@ -256,8 +256,9 @@ export default function Chatbot() {
   };
 
   const handleSuggestedPrompt = (prompt: string) => {
-    const nextHistory = [...chatHistory, { role: "user", text: prompt }];
-    setChatHistory([...nextHistory, { role: "model", text: "typing" }]);
+    const nextHistory: ChatEntry[] = [...chatHistory, { role: "user", text: prompt }];
+    const typingEntry: ChatEntry = { role: "model", text: "typing" };
+    setChatHistory([...nextHistory, typingEntry]);
     setIsLoading(true);
     void generateBotResponse(nextHistory);
   };
