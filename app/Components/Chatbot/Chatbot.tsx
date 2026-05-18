@@ -23,14 +23,43 @@ const API_URL = (model: string, action: string, apiKey: string) =>
 const CHAT_MODEL = "gemini-2.5-flash";
 const EMBED_MODEL = "text-embedding-004";
 
-const SYSTEM_PROMPT = `You are an ATS analyzer assistant for a resume screening site.
-Ask for the resume and job description when missing.
-Return concise, structured feedback with:
-- Match summary
-- Missing keywords
-- Formatting issues that hurt ATS parsing
-- Suggested bullet rewrites
-- A rough ATS score (0-100) labeled as an estimate`;
+const SYSTEM_PROMPT = `You are an ATS analyzer assistant for a resume screening site. Your responses must be CLEAR, STRUCTURED, and ACTIONABLE.
+
+RESPONSE GUIDELINES:
+1. **Use Clear Formatting:**
+   - Use bullet points for lists
+   - Use numbered steps for processes
+   - Bold key points and section headers
+   - Keep paragraphs short (2-3 sentences max)
+
+2. **Be Specific & Actionable:**
+   - Provide concrete examples, not vague advice
+   - Give specific keywords to add
+   - Suggest exact formatting changes
+   - Include before/after examples when possible
+
+3. **Structure Your Responses:**
+   - Start with a brief summary
+   - Provide key recommendations
+   - End with next steps or call-to-action
+   - Avoid long paragraphs - break into digestible chunks
+
+4. **When Analyzing:**
+   - Give a rough ATS score (0-100) with explanation
+   - List missing keywords
+   - Highlight formatting issues that hurt ATS parsing
+   - Suggest specific bullet point rewrites
+   - Provide match summary against job requirements
+
+5. **Focus Areas:**
+   - File type recommendations (DOCX vs PDF)
+   - Layout simplicity (single column, no complex designs)
+   - Font recommendations (Arial, Calibri, Lato, Times New Roman)
+   - Keyword optimization and placement
+   - Action verb usage in bullets
+   - Contact info formatting
+
+If user hasn't provided resume/job description, ask for them clearly and explain what you'll analyze.`;
 
 const PROFILE_STORAGE_KEY = "ats-user-profile";
 const DEFAULT_PROFILE: Profile = {
@@ -93,7 +122,15 @@ const buildSystemPrompt = (profile: Profile) => {
 - Tone: ${profile.tone}
 - Focus: ${profile.focus}
 
-Address the user by name when appropriate and match the preferred tone.`;
+ADDRESS USER BY NAME and match their preferred tone (${profile.tone}).
+
+OUTPUT FORMAT - Always follow this structure:
+1. Start with a clear, direct answer (1-2 sentences)
+2. Use bullet points or numbered lists for key points
+3. Include specific examples or recommendations
+4. End with a clear next step or call-to-action
+
+TONE: Be professional, direct, and helpful. Avoid vague language.`;
 
   return `${SYSTEM_PROMPT}
 
@@ -175,6 +212,22 @@ export default function Chatbot() {
   const [chatHistory, setChatHistory] = useState<ChatEntry[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<Profile>(loadProfile);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const SUGGESTED_PROMPTS = [
+    "📊 Analyze my resume for ATS optimization",
+    "📝 What formatting should I use for ATS?",
+    "🔍 What keywords should I add?",
+    "⚡ How can I improve my ATS score?",
+  ];
+
+  const AUTO_RESPONSES: Record<string, string> = {
+    hello: "👋 **Hey there!** I'm your Resume Assistant. Here's how I can help:\n\n• **Analyze Your Resume** - Share your resume & job description for ATS optimization tips\n• **Formatting Guidance** - Learn the best file types, layouts, and fonts for ATS\n• **Keyword Help** - Get specific keywords to add for better ATS matching\n• **Score Your Resume** - Get a 0-100 ATS score with actionable improvements\n\n**Ready to get started?** Just paste your resume or tell me what you need!",
+    hi: "👋 **Hi there!** I'm your Resume Assistant. I can help you:\n\n✓ Optimize for ATS (Applicant Tracking Systems)\n✓ Find missing keywords\n✓ Fix formatting issues\n✓ Improve your ATS score\n\n**What would you like help with?**",
+    help: "📋 **Here's what I can help with:**\n\n1. **Resume Analysis**\n   - Provide your resume & job description\n   - I'll give you an ATS score + specific feedback\n\n2. **Formatting Help**\n   - Best file types & fonts\n   - Layout recommendations\n   - What to avoid\n\n3. **Keyword Optimization**\n   - Which keywords to add\n   - Where to place them\n   - How to naturally integrate them\n\n4. **Specific Feedback**\n   - ATS parsing issues\n   - Bullet point rewrites\n   - Match analysis vs job description\n\n**Ready?** Share your resume or ask a specific question!",
+    thanks: "✅ **You're welcome!** Anything else I can help optimize?",
+    thank: "✅ **Happy to help!** Got more questions or need further analysis? Just ask!",
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -186,18 +239,42 @@ export default function Chatbot() {
       const updated = [...history];
       const last = updated.length - 1;
 
-      if (updated[last]?.role === "model" && updated[last]?.text === "Thinking...") {
+      if (updated[last]?.role === "model" && (updated[last]?.text === "Thinking..." || updated[last]?.text === "typing")) {
         updated[last] = { role: "model", text };
         return updated;
       }
 
       return [...updated, { role: "model", text }];
     });
+    setIsLoading(false);
+  };
+
+  const handleClearHistory = () => {
+    if (confirm("Clear all messages? This cannot be undone.")) {
+      setChatHistory([]);
+    }
+  };
+
+  const handleSuggestedPrompt = (prompt: string) => {
+    const nextHistory = [...chatHistory, { role: "user", text: prompt }];
+    setChatHistory([...nextHistory, { role: "model", text: "typing" }]);
+    setIsLoading(true);
+    void generateBotResponse(nextHistory);
   };
 
   const generateBotResponse = async (history: ChatEntry[]) => {
+    setIsLoading(true);
     const lastMessage = history[history.length - 1]?.text ?? "";
     const { mode, prompt } = parseCommand(lastMessage);
+
+    // Check for auto-responses
+    const lowerLastMessage = lastMessage.toLowerCase().trim();
+    for (const [key, response] of Object.entries(AUTO_RESPONSES)) {
+      if (lowerLastMessage.includes(key)) {
+        updateLastBotMessage(response);
+        return;
+      }
+    }
 
     if (mode === "profile") {
       const trimmed = prompt.trim();
@@ -312,8 +389,9 @@ export default function Chatbot() {
             parts: [{ text: buildSystemPrompt(userProfile) }],
           },
           generationConfig: {
-            temperature: 0.4,
-            maxOutputTokens: 800,
+            temperature: 0.3,
+            topP: 0.85,
+            maxOutputTokens: 1200,
           },
         }),
       });
@@ -333,32 +411,77 @@ export default function Chatbot() {
   return (
     <div className="ats-chatbot">
       {isOpen && (
-        <div className="chatbot-popup" role="dialog" aria-label="ATS chatbot">
+        <>
+          <div className="chatbot-backdrop" onClick={() => setIsOpen(false)}></div>
+          <div className="chatbot-popup" role="dialog" aria-label="ATS chatbot">
           <div className="chat-header">
             <div className="header-info">
               <ChatbotIcon />
-              <h2 className="logo-text">Chatbot</h2>
+              <h2 className="logo-text">Resume Assistant</h2>
             </div>
-            <button
-              type="button"
-              className="chatbot-close"
-              onClick={() => setIsOpen(false)}
-              aria-label="Close chatbot"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6.7 9.3L12 14.6l5.3-5.3 1.4 1.4L12 17.4 5.3 10.7z" />
-              </svg>
-            </button>
+            <div className="header-buttons">
+              {chatHistory.length > 0 && (
+                <button
+                  type="button"
+                  className="clear-history-btn"
+                  onClick={handleClearHistory}
+                  aria-label="Clear chat history"
+                  title="Clear all messages"
+                >
+                  Clear
+                </button>
+              )}
+              <button
+                type="button"
+                className="chatbot-close"
+                onClick={() => setIsOpen(false)}
+                aria-label="Close chatbot"
+                title="Close Chat"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <div className="chat-body">
             <div className="message bot-message">
               <ChatbotIcon />
-              <p className="message-text">Hello! I'm your ATS assistant.</p>
+              <p className="message-text">
+                👋 Hi {userProfile.name}! I'm your Resume Assistant. How can I help optimize your resume for ATS today?
+              </p>
             </div>
 
+            {chatHistory.length === 0 && (
+              <div className="suggested-prompts">
+                {SUGGESTED_PROMPTS.map((prompt, idx) => (
+                  <button
+                    key={idx}
+                    className="suggested-prompt-btn"
+                    onClick={() => handleSuggestedPrompt(prompt)}
+                  >
+                    💡 {prompt}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {chatHistory.map((chat, index) => (
-              <ChatMessage key={index} chat={chat} />
+              <div key={index}>
+                {chat.text === "typing" ? (
+                  <div className="message bot-message">
+                    <ChatbotIcon />
+                    <div className="typing-indicator">
+                      <div className="typing-dot"></div>
+                      <div className="typing-dot"></div>
+                      <div className="typing-dot"></div>
+                    </div>
+                  </div>
+                ) : (
+                  <ChatMessage chat={chat} />
+                )}
+              </div>
             ))}
           </div>
 
@@ -367,9 +490,11 @@ export default function Chatbot() {
               chatHistory={chatHistory}
               setChatHistory={setChatHistory}
               generateBotResponse={generateBotResponse}
+              isLoading={isLoading}
             />
           </div>
-        </div>
+          </div>
+        </>
       )}
 
       <button
